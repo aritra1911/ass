@@ -1,0 +1,27 @@
+
+If you're reading this, trust me this is not something you want to be looking at.
+
+Env:
+probook $ echo $CC
+/opt/gcc13/bin/gcc
+probook $ echo $CFLAGS
+-std=iso9899:1999 -Wall -Wextra -pedantic -g -O0
+probook $ echo $CPPFLAGS
+-D_XOPEN_SOURCE=600 -D_POSIX_PTHREAD_SEMANTICS -D_LARGEFILE64_SOURCE
+probook $ echo $LDFLAGS
+
+Pile:
+$ $CC $CFLAGS $CPPFLAGS -c -o strtrim.o  strtrim.c
+$ $CC $CFLAGS $CPPFLAGS -c -o ass.o ass.c
+$ $CC $CFLAGS $CPPFLAGS -c -o main.o main.c
+$ $CC $CFLAGS $CPPFLAGS $LDFLAGS -o ass *.o
+
+$ ./ass
+Let's try to decode a simple ADD instruction :
+
+    ADD Rs, PC, #4
+
+           OpCode : 'ADD'
+               Rd : 'Rs'
+               Rn : 'PC'
+  shifter operand : '#4'
