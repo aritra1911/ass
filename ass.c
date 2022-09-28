@@ -1,5 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -8,6 +10,28 @@
 
 #define OPCODE_LEN  3
 #define COND_LEN    2
+#define UR_MOM      -1  /* She so heavy, even the signed integer
+                         * calculating her weight overflowed! */
+
+static int
+get_reg_value(const char *rstr_)
+{
+    char rstr__[256];
+    strcpy(rstr__, rstr_);
+    char *rstr = strtrim(rstr__);
+
+    int ret;
+
+         if ( rstr[0] == 'R' )      ret = strtol(rstr + 1, NULL, 10);
+    else if ( !strcmp(rstr, "FP") ) ret = 0xb;
+    else if ( !strcmp(rstr, "IP") ) ret = 0xc;
+    else if ( !strcmp(rstr, "SP") ) ret = 0xd;
+    else if ( !strcmp(rstr, "LR") ) ret = 0xe;
+    else if ( !strcmp(rstr, "PC") ) ret = 0xf;
+    else                            ret = UR_MOM;
+
+    return ret;
+}
 
 int
 parse_instruction(const char *cinstr)
@@ -32,16 +56,16 @@ parse_instruction(const char *cinstr)
     char *instr = strtrim(minstr);
 
     if ( isatty(STDOUT_FILENO) )
-        printf("\x1b[32m>\x1b[0m \x1b[31m%s\x1b[0m\n", instr);
+        printf("\n \x1b[32m>\x1b[0m \x1b[31m%s\x1b[0m\n", instr);
     else
-        printf("> %s\n", instr);
+        printf("\n > %s\n", instr);
 
     char *opcode = strtok(instr, " ");
     char *rd = strtok(NULL, ", ");
     char *rn = strtok(NULL, ", ");
     char *shifter_operand = strtok(NULL, ", "); /* TODO: Fix this */
 
-    instruct_t instruct;
+    instruct_t instruct; memset(&instruct, 0, sizeof(instruct_t));
     char *op = opcode;
 
     /* Parse opcode */
@@ -63,7 +87,7 @@ parse_instruction(const char *cinstr)
     else if ( !strncmp(op, "MVN", OPCODE_LEN) ) instruct.opcode = MVN;
     else {
         fprintf(stderr, "Unknown / Unimplemented instruction : '%s'\n", op);
-        return -1;
+        return UR_MOM;
     }
 
     /*
@@ -72,14 +96,7 @@ parse_instruction(const char *cinstr)
      */
     op += OPCODE_LEN;
 
-    /* Parse Status bit *
-    if ( opcode[strlen(opcode) - 1] == 'S' ) {
-        instruct.s = 1;
-        opcode[strlen(opcode) - 1] = '\0';
-    }
-    */
-
-    /* Parse Condition (if any) */
+    /* Parse Condition ( if there's any that is ) */
     instruct.cond = AL; /* default when not specified */
     if ( strlen(op) >= 2 ) {
              if ( !strncmp(op, "EQ", COND_LEN) )   instruct.cond = EQ;
@@ -104,11 +121,20 @@ parse_instruction(const char *cinstr)
         op += COND_LEN;
     }
 
-    instruct.s = *op == 'S';
+     if ( *op == 'S' ) instruct.s = 1;
+     else if ( *op ) {
+        if ( op[strlen(op) - 1] == 'S' ) op[strlen(op) - 1] = '\0';
+        fprintf(stderr, "Unknown cond : '%s'\n", op - COND_LEN);
+        return UR_MOM;
+    }
+
+    /* Parse register values */
+    int rd_val = get_reg_value(rd);
+    int rn_val = get_reg_value(rn);
 
     printf("           OpCode : '%s' (0x%x)\n", opcode, instruct.opcode);
-    printf("               Rd : '%s'\n", rd);
-    printf("               Rn : '%s'\n", rn);
+    printf("               Rd : '%s' (0x%x)\n", rd, rd_val);
+    printf("               Rn : '%s' (0x%x)\n", rn, rn_val);
     printf("  shifter operand : '%s'\n", shifter_operand);
     printf("             cond : 0x%x\n", instruct.cond);
     printf("                s : %u\n\n", instruct.s);
