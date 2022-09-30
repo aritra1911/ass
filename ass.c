@@ -13,21 +13,96 @@
 #define UR_MOM      -1  /* She so heavy, even the signed integer
                          * calculating her weight overflowed! */
 
+typedef enum {
+    EQ, NE, CS, CC,
+    MI, PL, VS, VC,
+    HI, LS, GE, LT,
+    GT, LE, AL, NV
+} cond_t;
+
+typedef enum {
+    AND,    EOR,    SUB,    RSB,
+    ADD,    ADC,    SBC,    RSC,
+    TST,    TEQ,    CMP,    CMN,
+    ORR,    MOV,    BIC,    MVN
+} opcode_t;
+
+typedef enum {
+    R0,  R1,  R2,  R3,
+    R4,  R5,  R6,  R7,
+    R8,  R9,  R10, FP,
+    IP,  SP,  LR,  PC
+} reg_t;
+
+typedef enum {
+    IMM,    /* #<immediate>             (page A5-6 ) */ /* TODO */
+    REG,    /* <Rm>                     (page A5-8 ) */ /* TODO */
+    LSLI,   /* <Rm>, LSL #<shift_imm>   (page A5-9 ) */ /* TODO */
+    LSLR,   /* <Rm>, LSL <Rs>           (page A5-10) */ /* TODO */
+    LSRI,   /* <Rm>, LSR #<shift_imm>   (page A5-11) */ /* TODO */
+    LSRR,   /* <Rm>, LSR <Rs>           (page A5-12) */ /* TODO */
+    ASRI,   /* <Rm>, ASR #<shift_imm>   (page A5-13) */ /* TODO */
+    ASRR,   /* <Rm>, ASR <Rs>           (page A5-14) */ /* TODO */
+    RORI,   /* <Rm>, ROR #<shift_imm>   (page A5-15) */ /* TODO */
+    RORR,   /* <Rm>, ROR <Rs>           (page A5-16) */ /* TODO */
+    RRX,    /* <Rm>, RRX                (page A5-17) */ /* TODO */
+} addr_mode_t;
+
+typedef struct {
+    uint8_t rotate_imm;
+    uint8_t immed_8;
+} imm_t;
+
+typedef struct {
+    addr_mode_t mode;
+    union {
+        imm_t imm;
+        reg_t rm;
+    } op;
+} shifter_op_t;
+
+typedef struct {
+    cond_t cond;
+    opcode_t opcode;
+    uint8_t s;
+    uint8_t rd;
+    uint8_t rn;
+    shifter_op_t shifter_op;
+} instruct_t;
+
+static const char *
+get_addr_mode_str(addr_mode_t mode)
+{
+    switch ( mode ) {
+    case IMM:   return "IMM";
+    case REG:   return "REG";
+    case LSLI:  return "LSLI";
+    case LSLR:  return "LSLR";
+    case LSRI:  return "LSRI";
+    case LSRR:  return "LSRR";
+    case ASRI:  return "ASRI";
+    case ASRR:  return "ASRR";
+    case RORI:  return "RORI";
+    case RORR:  return "RORR";
+    case RRX:   return "RRX";
+    }
+}
+
 static int
-get_reg_value(const char *rstr_)
+parse_reg(const char *rstr_)
 {
     char rstr__[256];
     strcpy(rstr__, rstr_);
     char *rstr = strtrim(rstr__);
 
-    int ret;
+    reg_t ret;
 
          if ( rstr[0] == 'R' )      ret = strtol(rstr + 1, NULL, 10);
-    else if ( !strcmp(rstr, "FP") ) ret = 0xb;
-    else if ( !strcmp(rstr, "IP") ) ret = 0xc;
-    else if ( !strcmp(rstr, "SP") ) ret = 0xd;
-    else if ( !strcmp(rstr, "LR") ) ret = 0xe;
-    else if ( !strcmp(rstr, "PC") ) ret = 0xf;
+    else if ( !strcmp(rstr, "FP") ) ret = FP;
+    else if ( !strcmp(rstr, "IP") ) ret = IP;
+    else if ( !strcmp(rstr, "SP") ) ret = SP;
+    else if ( !strcmp(rstr, "LR") ) ret = LR;
+    else if ( !strcmp(rstr, "PC") ) ret = PC;
     else                            ret = UR_MOM;
 
     return ret;
@@ -63,7 +138,7 @@ parse_instruction(const char *cinstr)
     char *opcode = strtok(instr, " ");
     char *rd = strtok(NULL, ", ");
     char *rn = strtok(NULL, ", ");
-    char *shifter_operand = strtok(NULL, ", "); /* TODO: Fix this */
+    char *shifter_operand = strtrim(strtok(NULL, ";")); /* TODO: Fix this */
 
     instruct_t instruct; memset(&instruct, 0, sizeof(instruct_t));
     char *op = opcode;
@@ -89,6 +164,8 @@ parse_instruction(const char *cinstr)
         fprintf(stderr, "Unknown / Unimplemented instruction : '%s'\n", op);
         return UR_MOM;
     }
+
+    printf("           OpCode : '%s' (0x%x)\n", opcode, instruct.opcode);
 
     /*
      * Go beyond the instruction opcode to check if we got any
@@ -128,16 +205,30 @@ parse_instruction(const char *cinstr)
         return UR_MOM;
     }
 
-    /* Parse register values */
-    int rd_val = get_reg_value(rd);
-    int rn_val = get_reg_value(rn);
+    printf("             cond : 0x%x\n", instruct.cond);
+    printf("                s : %u\n", instruct.s);
 
-    printf("           OpCode : '%s' (0x%x)\n", opcode, instruct.opcode);
+
+    /* Parse register values */
+    int rd_val = parse_reg(rd);
+    int rn_val = parse_reg(rn); /* TODO: Might not exist in case of MOV and CMP */
+
     printf("               Rd : '%s' (0x%x)\n", rd, rd_val);
     printf("               Rn : '%s' (0x%x)\n", rn, rn_val);
     printf("  shifter operand : '%s'\n", shifter_operand);
-    printf("             cond : 0x%x\n", instruct.cond);
-    printf("                s : %u\n\n", instruct.s);
+
+    /* Parse shifter operand */
+    if ( *shifter_operand == 'R' && strlen(shifter_operand) == 2 ) {
+        instruct.shifter_op.mode = REG;
+        instruct.shifter_op.op.rm = parse_reg(shifter_operand);
+    } else {
+        fprintf(stderr, "Invalid (or unimplemented) shifter operand '%s'\n",
+                        shifter_operand);
+        return UR_MOM;
+    }
+
+    printf("  |\n");
+    printf("  `- mode : %s\n", get_addr_mode_str(instruct.shifter_op.mode));
 
     return 0;
 }
