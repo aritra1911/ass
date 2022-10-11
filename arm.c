@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "strtrim.h"
-#include "ass.h"
+#include "arm.h"
 
 #define OPCODE_LEN  3
 #define COND_LEN    2
@@ -227,7 +227,6 @@ parse_instruction(const char *cinstr)
         return UR_MOM;
     }
 
-    printf("  |\n");
     printf("  `- mode : %s\n", get_addr_mode_str(instruct.shifter_op.mode));
 
     return 0;
