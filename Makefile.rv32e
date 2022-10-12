@@ -1,0 +1,6 @@
+CPPFLAGS	=	-D_RV32E
+
+TARGET		=	ass_rv32e
+SRCS		=	main.c rv32e.c strtrim.c
+
+include	common.mk

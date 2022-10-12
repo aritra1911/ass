@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "arm.h"
+#include "ass.h"
 
 int
 main(void)
 {
-    printf("Let's try to parse simple ADD instructions :\n\n");
+#ifdef _ARMV7L
+
+    printf("Architecture : ARM (32-bit) (No Thumb instructions)\n"
+           "      Endian : Little\n"
+           "      Status : Mostly unimplemented!\n\n");
 
     /*                  OpCode  Rd      Rn      shifter_op */
     parse_instruction(" ADD     R2,     PC,     #4  ");
@@ -34,6 +38,16 @@ main(void)
     parse_instruction(" RSB     R9,     R5,     R5,     LSL #3  ; R9 = R5 x 8 - R5 or R9 = R5 x 7   ");
     parse_instruction(" SUB     R10,    R9,     R8,     LSR #4  ; R10 = R9 - R8 / 16    ");
     parse_instruction(" MOV     R12,    R4,     ROR     R3      ; R12 = R4 rotated right by value of R3 ");
+
+#elif defined _RV32E
+
+    printf("Architecture : RISC-V (32-bit) (RV32E Base Instruction Set)\n"
+           "      Endian : Little\n"
+           "      Status : Totally unimplemented! You shouldn't be here at all!\n\n");
+
+    parse_instruction(" ADD     x1,     x2,     x3  ");
+
+#endif
 
     return EXIT_SUCCESS;
 }

@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "strtrim.h"
-#include "arm.h"
+#include "ass.h"
 
 #define OPCODE_LEN  3
 #define COND_LEN    2
