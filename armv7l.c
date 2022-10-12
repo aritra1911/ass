@@ -10,8 +10,6 @@
 
 #define OPCODE_LEN  3
 #define COND_LEN    2
-#define UR_MOM      -1  /* She so heavy, even the signed integer
-                         * calculating her weight overflowed! */
 
 typedef enum {
     EQ, NE, CS, CC,

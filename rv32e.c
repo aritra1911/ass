@@ -57,5 +57,5 @@ parse_instruction(const char *cinstr)
 
     fprintf(stderr, "Sorry!  Instruction parsing is still unimplemented for RV32E!\n");
 
-    return -1;
+    return UR_MOM;
 }

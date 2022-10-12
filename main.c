@@ -41,7 +41,7 @@ main(void)
 
 #elif defined _RV32E
 
-    printf("Architecture : RISC-V (32-bit) (RV32E Base Instruction Set)\n"
+    printf("Architecture : RISC-V (32-bit) (RV32E Base Integer Instruction Set)\n"
            "      Endian : Little\n"
            "      Status : Totally unimplemented! You shouldn't be here at all!\n\n");
 
