@@ -1,6 +1,6 @@
 CPPFLAGS	=	-D_ARMV7L
 
 TARGET		=	ass_armv7l
-SRCS		=	main.c armv7l.c strtrim.c
+SRCS		=	main.c ass.c armv7l.c strtrim.c
 
 include	common.mk

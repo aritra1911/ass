@@ -113,7 +113,7 @@ parse_instruction(const char *cinstr)
      *
      *   31  28 27 26 25  24     21 20  19  16 15  12 11              0
      *  +--------------------------------------------------------------+
-     *  | cond | 0 0 | 1 | 0 1 0 0 | S |  Rn  |  Rd  | shifter operand |
+     *  | cond | 0 0 | I | 0 1 0 0 | S |  Rn  |  Rd  | shifter operand |
      *  +--------------------------------------------------------------+
      *
      *  Syntax:
@@ -226,6 +226,21 @@ parse_instruction(const char *cinstr)
     }
 
     printf("  `- mode : %s\n", get_addr_mode_str(instruct.shifter_op.mode));
+
+    uint32_t word = 0;
+    word |= instruct.cond & 0xf;
+    word <<= 2;
+    word = word << 1;   /* the I bit comes from the shifter_operand */
+    word = word << 4 | (instruct.opcode & 0xf);
+    word = word << 1 | (instruct.s & 1);
+    word = word << 4 | (rn_val & 0xf);
+    word = word << 4 | (rd_val & 0xf);
+    word = word << 12   /* | instruct.shifter_operand */ ;
+
+    char *hexword = NULL;
+    hex32el(&hexword, word, 1);
+    printf(" instruction word : %08X (%s)\n", word, hexword);
+    free(hexword);  hexword = NULL; /* TODO: Make this a macro */
 
     return 0;
 }
